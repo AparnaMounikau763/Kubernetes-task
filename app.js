@@ -1,10 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
+
 const app = express();
 
 app.use(express.json());
 
-mongoose.connect("mongodb://mongo:27017/tasks", {
+mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -12,6 +13,10 @@ mongoose.connect("mongodb://mongo:27017/tasks", {
 const Task = mongoose.model("Task", {
   title: String,
   completed: Boolean,
+});
+
+app.get("/", (req, res) => {
+  res.send("Task Manager API Running");
 });
 
 app.get("/tasks", async (req, res) => {
@@ -30,4 +35,6 @@ app.delete("/tasks/:id", async (req, res) => {
   res.send("Deleted");
 });
 
-app.listen(3000, () => console.log("Server running"));
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
