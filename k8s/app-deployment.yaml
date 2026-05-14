@@ -25,7 +25,7 @@ spec:
       containers:
       - name: app
 
-        image: aparnamounika/task-manager:833bce27e864c71e94557c5d9e106b6d22465a4f
+        image: aparnamounika/task-manager:e33d56300f97f6a85d786e9a093fa4d9144f2442
         imagePullPolicy: Always
 
         ports:
