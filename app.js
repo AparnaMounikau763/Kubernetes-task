@@ -6,21 +6,21 @@ const app = express();
 
 app.use(express.json());
 
-/* ================================
+/* =========================================
    PROMETHEUS METRICS
-================================ */
+========================================= */
 
 // Collect default Node.js metrics
 client.collectDefaultMetrics();
 
-// Custom HTTP request counter
+// Custom request counter
 const httpRequestCounter = new client.Counter({
   name: "http_requests_total",
   help: "Total number of HTTP requests",
   labelNames: ["method", "route", "status"],
 });
 
-// Middleware to count requests
+// Middleware for counting requests
 app.use((req, res, next) => {
   res.on("finish", () => {
     httpRequestCounter.inc({
@@ -33,63 +33,85 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================================
+/* =========================================
    MONGODB CONNECTION
-================================ */
+========================================= */
 
-mongoose.connect(process.env.MONGO_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// Fallback value added here
+const mongoURL =
+  process.env.MONGO_URL || "mongodb://mongo:27017/tasks";
 
-mongoose.connection.on("connected", () => {
-  console.log("MongoDB Connected");
-});
+mongoose
+  .connect(mongoURL)
+  .then(() => {
+    console.log("MongoDB Connected");
+  })
+  .catch((err) => {
+    console.log("MongoDB Error:", err);
+  });
 
-mongoose.connection.on("error", (err) => {
-  console.log("MongoDB Error:", err);
-});
-
-/* ================================
+/* =========================================
    TASK MODEL
-================================ */
+========================================= */
 
 const Task = mongoose.model("Task", {
   title: String,
   completed: Boolean,
 });
 
-/* ================================
+/* =========================================
    ROUTES
-================================ */
+========================================= */
 
-// Root route
+// Home route
 app.get("/", (req, res) => {
   res.send("Task Manager API Running");
 });
 
 // Get all tasks
 app.get("/tasks", async (req, res) => {
-  const tasks = await Task.find();
-  res.json(tasks);
+  try {
+    const tasks = await Task.find();
+
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
 });
 
 // Create task
 app.post("/tasks", async (req, res) => {
-  const task = new Task(req.body);
-  await task.save();
-  res.json(task);
+  try {
+    const task = new Task(req.body);
+
+    await task.save();
+
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
 });
 
 // Delete task
 app.delete("/tasks/:id", async (req, res) => {
-  await Task.findByIdAndDelete(req.params.id);
-  res.send("Deleted");
+  try {
+    await Task.findByIdAndDelete(req.params.id);
+
+    res.send("Deleted");
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
 });
 
-/* ================================
+/* =========================================
    METRICS ENDPOINT
-================================ */
+========================================= */
 
 app.get("/metrics", async (req, res) => {
   try {
@@ -99,13 +121,13 @@ app.get("/metrics", async (req, res) => {
 
     res.send(metrics);
   } catch (err) {
-    res.status(500).send(err);
+    res.status(500).send(err.message);
   }
 });
 
-/* ================================
+/* =========================================
    SERVER
-================================ */
+========================================= */
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");

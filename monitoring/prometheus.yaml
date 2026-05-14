@@ -1,5 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: prometheus
 
@@ -18,15 +19,25 @@ spec:
     spec:
       containers:
       - name: prometheus
+
         image: prom/prometheus:v2.52.0
-        imagePullPolicy: IfNotPresent
 
         ports:
         - containerPort: 9090
 
+        volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus
+
+      volumes:
+      - name: prometheus-config-volume
+        configMap:
+          name: prometheus-config
+
 ---
 apiVersion: v1
 kind: Service
+
 metadata:
   name: prometheus
 
