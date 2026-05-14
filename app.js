@@ -6,11 +6,12 @@ const app = express();
 
 app.use(express.json());
 
-/* ---------------- PROMETHEUS METRICS ---------------- */
+/* ================================
+   PROMETHEUS METRICS
+================================ */
 
-// Collect default metrics
-const collectDefaultMetrics = client.collectDefaultMetrics;
-collectDefaultMetrics();
+// Collect default Node.js metrics
+client.collectDefaultMetrics();
 
 // Custom HTTP request counter
 const httpRequestCounter = new client.Counter({
@@ -24,7 +25,7 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     httpRequestCounter.inc({
       method: req.method,
-      route: req.route ? req.route.path : req.path,
+      route: req.path,
       status: res.statusCode,
     });
   });
@@ -32,50 +33,79 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ---------------- MONGODB CONNECTION ---------------- */
+/* ================================
+   MONGODB CONNECTION
+================================ */
 
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-/* ---------------- TASK MODEL ---------------- */
+mongoose.connection.on("connected", () => {
+  console.log("MongoDB Connected");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.log("MongoDB Error:", err);
+});
+
+/* ================================
+   TASK MODEL
+================================ */
 
 const Task = mongoose.model("Task", {
   title: String,
   completed: Boolean,
 });
 
-/* ---------------- ROUTES ---------------- */
+/* ================================
+   ROUTES
+================================ */
 
+// Root route
 app.get("/", (req, res) => {
   res.send("Task Manager API Running");
 });
 
+// Get all tasks
 app.get("/tasks", async (req, res) => {
   const tasks = await Task.find();
   res.json(tasks);
 });
 
+// Create task
 app.post("/tasks", async (req, res) => {
   const task = new Task(req.body);
   await task.save();
   res.json(task);
 });
 
+// Delete task
 app.delete("/tasks/:id", async (req, res) => {
   await Task.findByIdAndDelete(req.params.id);
   res.send("Deleted");
 });
 
-/* ---------------- METRICS ENDPOINT ---------------- */
+/* ================================
+   METRICS ENDPOINT
+================================ */
 
 app.get("/metrics", async (req, res) => {
-  res.set("Content-Type", client.register.contentType);
-  res.end(await client.register.metrics());
+  try {
+    res.set("Content-Type", client.register.contentType);
+
+    const metrics = await client.register.metrics();
+
+    res.send(metrics);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
 
-/* ---------------- SERVER ---------------- */
+/* ================================
+   SERVER
+================================ */
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");
