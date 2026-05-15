@@ -63,7 +63,7 @@ const Task = mongoose.model("Task", {
 
 // Home route
 app.get("/", (req, res) => {
-  res.send("Task Manager API Running - v2");
+  res.send("Task Manager v2 - DevOps Working");
 });
 
 // Get all tasks
