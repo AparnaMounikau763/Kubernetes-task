@@ -50,9 +50,7 @@ mongoose
     console.log("MongoDB Error:", err);
   });
 
-/* =========================================
-   TASK MODEL
-========================================= */
+
 
 const Task = mongoose.model("Task", {
   title: String,
@@ -65,7 +63,7 @@ const Task = mongoose.model("Task", {
 
 // Home route
 app.get("/", (req, res) => {
-  res.send("Task Manager API Running");
+  res.send("Task Manager API Running - v2");
 });
 
 // Get all tasks
